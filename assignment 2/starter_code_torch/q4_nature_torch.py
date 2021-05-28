@@ -15,42 +15,26 @@ class DeepQNetwork(nn.Module):
 
     def __init__(self, num_actions):
         super(DeepQNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(24, 32, 8, 4)
-        self.conv2 = nn.Conv2d(32, 64, 4, 2)
-        self.conv3 = nn.Conv2d(64, 64, 3, 1)
-        # self.fc1 = nn.Linear()
-        # Init with cuda if available
+        self.conv1 = nn.Conv2d(in_channels=24, out_channels=32, kernel_size=4, stride=1, padding=0)
+        self.fc1 = nn.Linear(in_features=32 * 5 * 5, out_features=num_actions)
         if torch.cuda.is_available():
             self.cuda()
         self.apply(self.weights_init)
 
-    def forward(self, x):
-        x = self.conv1(x)
-        print("\n\n\n\n")
-        print(x.size(), flush=True)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        # print("\n\n\n\n")
-        # print(x.size(), flush=True)
-        x = x.view(x.size(0), -1)
-        x = self.hidden(x)
-        x = self.out(x)
+    def forward(self, x: torch.Tensor):
+        x.transpose_(1, 3)
+        x = F.relu(self.conv1(x))
+        x = x.reshape(x.size(0), -1)
+        x = self.fc1(x)
         return x
 
     @staticmethod
     def weights_init(m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
-            # pass
-            m.weight.data.normal_(0.0, 0.02)
-            # nn.init.xavier_uniform(m.weight)
+            nn.init.xavier_uniform(m.weight)
         if classname.find('Linear') != -1:
-            pass
-            # m.weight.data.normal_(0.0, 0.02)
-            # m.weight.data.fill_(1)
-            # nn.init.xavier_uniform(m.weight)
-            # m.weight.data.normal_(0.0, 0.008)
-
+            nn.init.xavier_uniform(m.weight)
 
 
 class NatureQN(Linear):
@@ -116,11 +100,6 @@ class NatureQN(Linear):
 
         ##############################################################
         ################ YOUR CODE HERE - 4-5 lines lines ################
-
-        state.transpose_(1, 3)
-        print("\n\n")
-        print(state.size())
-        print("\n\n")
 
         if network == "q_network":
             out = self.q_network(state)
